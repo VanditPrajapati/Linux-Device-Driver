@@ -10,10 +10,10 @@
 #include<linux/slab.h>
 #include<linux/ioctl.h>
 
-#define WR_DATA _IOW('a','a',int32_t*)
-#define RD_DATA _IOR('a','b',int32_t*)
+#define WR_DATA _IOW('a','a',char *)
+#define RD_DATA _IOR('a','b',char *)
 
-int32_t val;
+char val[100];
 
 dev_t first;
 static struct cdev char_dev;
@@ -43,7 +43,6 @@ static int char_release(struct inode *inode, struct file *file)
 {
 	kfree(kernel_buffer);
 	printk(KERN_INFO "Device Driver Closed..\n");
-	printk(KERN_INFO " ");
 	return 0;
 }
 
@@ -53,15 +52,17 @@ static long char_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	{
 		case WR_DATA:
 			printk(KERN_INFO "Data Writing...\n");
-			copy_from_user(&val,(int32_t*)arg,sizeof(val));
-			printk(KERN_INFO "Data Written\n");
-			printk(KERN_INFO "Data Written: %d\n", val);
+			copy_from_user(&val,(char *)arg,sizeof(val));
+			printk(KERN_INFO "Data Written Done\n");
+			printk(KERN_INFO "Data Written: %s\n",val);
+			printk(KERN_INFO " ");
 			break;
 
 		case RD_DATA:
 			printk(KERN_INFO "Data Reading..\n");
-			copy_to_user((int32_t*)arg,&val,sizeof(val));
+			copy_to_user((char *)arg,&val,sizeof(val));
 			printk(KERN_INFO "Data Reading Done\n");
+			printk(KERN_INFO " ");
 			break;
 
 		default:
@@ -69,6 +70,7 @@ static long char_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	}
 	return 0;
 }
+
 
 static ssize_t char_read(struct file *file, char __user *buf, size_t count, loff_t *offset)
 {
@@ -90,6 +92,7 @@ static ssize_t char_write(struct file *file, const char __user *buf, size_t coun
 	kernel_buffer[memsize] = 0;
 	return count;
 }
+
 
 static struct file_operations char_fops = {
 	.owner = THIS_MODULE,
@@ -130,7 +133,8 @@ static int __init function_init(void)
 		goto r_device;
 	}
 
-	printk(KERN_INFO "Device Driver Inserted Succesfully..\n");
+	printk(KERN_INFO " ");
+	printk("Device Driver Inserted Succesfully..\n");
 	printk(KERN_INFO "Major No.: %d and Minor No.: %d", MAJOR(first), MINOR(first));
 	return 0;
 
@@ -148,8 +152,10 @@ static void __exit function_exit(void)
 	class_destroy(cl);
 	cdev_del(&char_dev);
 	unregister_chrdev_region(first, 1);
-	printk(KERN_INFO "Device Driver Removed Successfully\n");
+	printk("Device Driver Removed Successfully\n");
+	printk(KERN_INFO " ");
 }
+
 
 module_init(function_init);
 module_exit(function_exit);
