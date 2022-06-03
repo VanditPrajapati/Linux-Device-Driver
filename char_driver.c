@@ -8,6 +8,12 @@
 #include<linux/fs.h>
 #include<linux/version.h>
 #include<linux/slab.h>
+#include<linux/ioctl.h>
+
+#define WR_DATA _IOW('a','a',int32_t*)
+#define RD_DATA _IOR('a','b',int32_t*)
+
+int32_t val;
 
 dev_t first;
 static struct cdev char_dev;
@@ -41,6 +47,29 @@ static int char_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
+static long char_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	switch(cmd)
+	{
+		case WR_DATA:
+			printk(KERN_INFO "Data Writing...\n");
+			copy_from_user(&val,(int32_t*)arg,sizeof(val));
+			printk(KERN_INFO "Data Written\n");
+			printk(KERN_INFO "Data Written: %d\n", val);
+			break;
+
+		case RD_DATA:
+			printk(KERN_INFO "Data Reading..\n");
+			copy_to_user((int32_t*)arg,&val,sizeof(val));
+			printk(KERN_INFO "Data Reading Done\n");
+			break;
+
+		default:
+			break;
+	}
+	return 0;
+}
+
 static ssize_t char_read(struct file *file, char __user *buf, size_t count, loff_t *offset)
 {
 	copy_to_user(buf, kernel_buffer, count);
@@ -51,7 +80,6 @@ static ssize_t char_read(struct file *file, char __user *buf, size_t count, loff
 
 static ssize_t char_write(struct file *file, const char __user *buf, size_t count, loff_t *offset)
 {
-	size_t ncopied;
 	if(count < memsize)
 	{
 		memsize = count;
@@ -67,6 +95,7 @@ static struct file_operations char_fops = {
 	.owner = THIS_MODULE,
 	.open = char_open,
 	.release = char_release,
+	.unlocked_ioctl = char_ioctl,
 	.read = char_read,
 	.write = char_write
 };
