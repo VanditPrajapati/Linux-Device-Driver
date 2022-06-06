@@ -29,7 +29,7 @@ static struct kobject *kobj_ref;
 
 static struct proc_dir_entry *parent;
 
-static char array[20] = "Vandit Prajapati\n";
+static char array[30];
 static int len = 1;
 
 uint8_t *kernel_buffer;
@@ -161,7 +161,7 @@ static ssize_t read_proc(struct file *file, char __user *buf, size_t count, loff
 		return 0;
 	}
 
-	if(copy_to_user(buf,array,20))
+	if(copy_to_user(buf,array,sizeof(array)))
 	{
 		printk(KERN_INFO "Data read error\n");
 	}
@@ -172,7 +172,7 @@ static ssize_t read_proc(struct file *file, char __user *buf, size_t count, loff
 static ssize_t write_proc(struct file *file, const char *buf, size_t count, loff_t *offset)
 {
 	printk(KERN_INFO "Data Writing\n");
-	copy_from_user(array,buf,count);
+	copy_from_user(array,buf,sizeof(array));
 	return count;
 }
 
@@ -261,7 +261,7 @@ r_class:
 
 static void __exit function_exit(void)
 {
-	remove_proc_entry("chardriver/chardriver_proc",parent);
+	remove_proc_entry("chardriver/chardriver_proc",NULL);
 	kobject_put(kobj_ref);
 	sysfs_remove_file(NULL, &chardriver_attr.attr);
 	device_destroy(cl, first);
