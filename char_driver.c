@@ -12,8 +12,11 @@
 
 #define WR_DATA _IOW('a','a',char *)
 #define RD_DATA _IOR('a','b',char *)
+#define SET_VARIABLE _IOW('a','c',int *)
+#define GET_VARIABLE _IOR('a','d',int *)
 
-char *val ;
+char *val;
+unsigned long int variable;
 
 dev_t first;
 static struct cdev char_dev;
@@ -66,6 +69,20 @@ static long char_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			printk(KERN_INFO "Data Reading Done\n");
 			printk(KERN_INFO "Data Read: %s\n",(char *)arg);
 			printk(KERN_INFO " ");
+			break;
+
+		case SET_VARIABLE:
+			printk(KERN_INFO "Setting the variable\n");
+			variable = arg;
+			printk(KERN_INFO "New value of Variable is: %ld", variable);
+			printk(" ");
+			break;
+
+		case GET_VARIABLE:
+			printk(KERN_INFO "Reading the value of variable\n");
+			arg = variable;
+			printk(KERN_INFO "The value of variable is: %ld\n", arg);
+			printk(" ");
 			break;
 
 		default:
