@@ -13,7 +13,7 @@
 #define WR_DATA _IOW('a','a',char *)
 #define RD_DATA _IOR('a','b',char *)
 
-char val[100];
+char *val ;
 
 dev_t first;
 static struct cdev char_dev;
@@ -35,6 +35,7 @@ static int char_open(struct inode *inode, struct file *file)
 		printk(KERN_INFO "Cannot allocate the memory\n");
 		return -1;
 	}
+	val = kmalloc(500*sizeof(char), GFP_KERNEL);
 	printk(KERN_INFO "Device Driver Opened..\n");
 	return 0;
 }
@@ -42,6 +43,7 @@ static int char_open(struct inode *inode, struct file *file)
 static int char_release(struct inode *inode, struct file *file)
 {
 	kfree(kernel_buffer);
+	kfree(val);
 	printk(KERN_INFO "Device Driver Closed..\n");
 	return 0;
 }
@@ -52,7 +54,7 @@ static long char_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	{
 		case WR_DATA:
 			printk(KERN_INFO "Data Writing...\n");
-			copy_from_user(&val,(char *)arg,sizeof(val));
+			copy_from_user(val,(char *)arg,sizeof(val));
 			printk(KERN_INFO "Data Written Done\n");
 			printk(KERN_INFO "Data Written: %s\n",val);
 			printk(KERN_INFO " ");
@@ -60,8 +62,9 @@ static long char_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		case RD_DATA:
 			printk(KERN_INFO "Data Reading..\n");
-			copy_to_user((char *)arg,&val,sizeof(val));
+			copy_to_user((char *)arg,val,sizeof(val));
 			printk(KERN_INFO "Data Reading Done\n");
+			printk(KERN_INFO "Data Read: %s\n",(char *)arg);
 			printk(KERN_INFO " ");
 			break;
 
