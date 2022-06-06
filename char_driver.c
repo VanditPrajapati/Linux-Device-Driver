@@ -18,9 +18,13 @@
 char *val;
 unsigned long int variable;
 
+volatile int value;
+
 dev_t first;
 static struct cdev char_dev;
 static struct class *cl;
+
+static struct kobject *kobj_ref;
 
 uint8_t *kernel_buffer;
 size_t memsize = 1024;
@@ -113,6 +117,18 @@ static ssize_t char_write(struct file *file, const char __user *buf, size_t coun
 	return count;
 }
 
+static ssize_t sysfs_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	printk(KERN_INFO "Sysfs Read Done\n");
+	return sprintf(buf, "%d\n", value);
+}
+
+static ssize_t sysfs_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	printk(KERN_INFO "Sysfs Write Done\n");
+	sscanf(buf, "%d", &value);
+	return count;
+}
 
 static struct file_operations char_fops = {
 	.owner = THIS_MODULE,
@@ -122,6 +138,8 @@ static struct file_operations char_fops = {
 	.read = char_read,
 	.write = char_write
 };
+
+static struct kobj_attribute chardriver_attr = __ATTR(value, 0660, sysfs_show, sysfs_store);
 
 static int __init function_init(void)
 {
@@ -153,10 +171,22 @@ static int __init function_init(void)
 		goto r_device;
 	}
 
+	kobj_ref = kobject_create_and_add("chardriver_sysfs", NULL);
+
+	if(sysfs_create_file(kobj_ref, &chardriver_attr.attr))
+	{
+		printk(KERN_INFO "sysfs file cannot be created\n");
+		goto r_sysfs;
+	}
+
 	printk(KERN_INFO " ");
 	printk("Device Driver Inserted Succesfully..\n");
 	printk(KERN_INFO "Major No.: %d and Minor No.: %d", MAJOR(first), MINOR(first));
 	return 0;
+
+r_sysfs:
+	kobject_put(kobj_ref);
+	sysfs_remove_file(NULL, &chardriver_attr.attr);	
 
 r_device:
 	class_destroy(cl);
@@ -168,6 +198,8 @@ r_class:
 
 static void __exit function_exit(void)
 {
+	kobject_put(kobj_ref);
+	sysfs_remove_file(NULL, &chardriver_attr.attr);
 	device_destroy(cl, first);
 	class_destroy(cl);
 	cdev_del(&char_dev);
